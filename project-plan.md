@@ -8,11 +8,11 @@ _Living document. Last updated: 2026-11-24._
 
 - **What this project is:** fork the open-source tool **LogSentinelAI**, prove it's vulnerable to prompt/log injection, add a defense, and measure the fix.
 - **Base repo to fork:** `github.com/call518/LogSentinelAI` (MIT). Confirm it's active (last commit, open issues) before forking.
-- **Current status (2026-11-24):** first task done ✅. Second task next. _(Summary only — full history in **Development Log** at the bottom.)_
+- **Current status (2026-11-24):** second task done ✅ (injection point found — see `docs/injection-point.md`). Next: design attack test cases. _(Summary only — full history in **Development Log** at the bottom.)_
   - Done: upstream checked (alive — last push 2026-11-04, mostly Dependabot; last maintainer commit 2026-10-24; 0 open issues; MIT). Forked to `timothy3276wong/Injection-Proof-LogSentinelAI` and cloned. uv + Python 3.12 installed; `.venv` built from `uv.lock`; `.python-version` set to 3.12; local `.env` configured for Ollama; CLI starts; 19/19 tests pass.
   - Done: Ollama 0.40.17 installed by the author, `qwen2.5:3b` pulled, context length 8192, runs on CPU.
   - Done: first end-to-end run — 4 lines of `sample-logs/access-10k.log`, chunk size 2, both chunks returned valid JSON that passed schema validation (details in `run-log.md`).
-  - Next: second task — find where chunk text is inserted into the prompt and report it before changing anything.
+  - Next: design the attack test cases (goals first: suppress, fake alarm, poison text), then a first proof-of-concept run.
   - Model decision: laptop is CPU-only (i5-1235U, 16 GB, Iris Xe) → `qwen2.5:3b` for development, `qwen2.5:7b` for the before/after runs.
   - Setup details and Windows gotchas (`PYTHONUTF8=1`): see `CLAUDE.md`.
 - **First task:** clone the fork, set up the environment (Python 3.11/3.12 + Ollama), configure LogSentinelAI to use the local Ollama backend, and get **one** test run producing valid JSON output on a sample log. Nothing else works until the backend is configured.
@@ -203,3 +203,6 @@ _Append-only, newest last. Each entry: date — what happened, and why for decis
 - **Added `CLAUDE.md`** so every Claude Code session starts with the setup details and project state.
 - **Committed** on branch `setup/dev-environment` (`9e6b23f`), not pushed. Work happens on branches so `main` stays a clean copy of upstream and every change gets reviewed as a PR.
 - **Decision: logging rules.** Every test run goes into `run-log.md`, and every status change into this Development Log. Both are append-only and redacted. The rules are in `CLAUDE.md`.
+- **Second task done: injection point found.** Read-only trace of unmodified code. Raw log text is inserted with `str.format()` at `commons.py:1238-1240` (batch) and `commons.py:625-633` (real-time). These are the only two prompt builders, shared by all four analyzers. No sanitization anywhere in `src/`. Instructions and logs go to the model as one user message, and the `<LOGS BEGIN>`/`<LOGS END>` markers can be faked. Alerts are decided only by each event's `severity`, and nothing checks the model's values. Full report: `docs/injection-point.md`.
+- **Correction to plan:** there is no `is_attack` field. Attack goals target `severity` (decides alerts), `highest_severity`, `attack_patterns`, and the free-text fields copied into alerts (`description`, `recommended_actions`).
+- **Explained:** the Run 1 `@log_path` bug comes from `commons.py:1277`, which uses the `.env` default path instead of the processed file.
