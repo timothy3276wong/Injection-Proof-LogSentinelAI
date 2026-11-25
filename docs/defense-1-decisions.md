@@ -10,7 +10,7 @@ gives a recommendation; the author decides; the choice and reason are recorded h
 |---|---|---|---|
 | 1 | Where the code lives | **decided** 2026-11-25 | (a) new `core/sanitize.py` |
 | 2 | Log-block markers | **decided** 2026-11-25 | (b) random per prompt, `secrets`, 8 bytes, `<<<LOG_DATA_<code> BEGIN/END>>>` |
-| 3 | Fake markers inside log lines | open | — |
+| 3 | Fake markers inside log lines | **decided** 2026-11-25 | (b) defuse `<`/`>` → `(`/`)`, narrow pattern requiring marker words |
 | 4 | Labelling each line | open | — |
 | 5 | Transforming the text itself | open | — |
 | 6 | Other hiding tricks (invisible chars, line breaks, colour codes, long lines) | open | — |
@@ -48,7 +48,10 @@ Recommendation: (b) with `secrets`.
 
 Sub-choice: what counts as a fake marker — only `LOGS` / `LOG_DATA` patterns (narrow), or anything tag-shaped (broad, risks altering real evidence).
 Recommendation: (b), narrow pattern.
-**Decision:** _open_
+
+How log type affects (b): it works wherever attacker text is logged as typed — User-Agent/Referer in access logs, usernames/commands in system logs, plain-text app logs. It misses encoded forms — percent-encoded URLs (`%3CLOGS%20END%3E`), JSON (`<`), HTML (`&lt;`) — which are also less convincing to the model. False-match risk is mainly XML-style general logs with real `<log>`/`<logs>` tags.
+
+**Decision (2026-11-25): (b) defuse, with refinement 1 — only angle-bracketed text that also contains a marker word is matched: `LOGS`/`LOG` followed by `BEGIN` or `END` (e.g. `<LOGS END>`), or anything containing `LOG_DATA` (fakes of the Decision 2 marker). Matched `<` / `>` become `(` / `)`; the rest of the line is unchanged.** Reason: cheap backup to Decision 2 for a small model that may be fooled by anything that merely looks like a marker; keeps the attempt visible as evidence; leaves real payloads (`<script>`, plain XML `<log>` tags) untouched. Not done: refinement 2 (encoded forms) — add a percent-encoded test case first and only add it if that case actually fools the model. Known limit: it removes the *boundary illusion*, not the injected instruction text, and does nothing against "polite note" attacks (S01, S04) or invented markers like `</data>`.
 
 ## Decision 4 — Labelling each line
 **Purpose:** make entry boundaries obvious, so injected text is clearly inside one attacker-controlled line.
