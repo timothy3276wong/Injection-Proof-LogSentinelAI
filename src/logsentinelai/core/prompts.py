@@ -57,9 +57,7 @@ LANGUAGE RULES:
 
 JSON schema: {model_schema}
 
-<LOGS BEGIN>
 {logs}
-<LOGS END>
 """
 
 PROMPT_TEMPLATE_HTTPD_SERVER_LOG = """
@@ -112,9 +110,7 @@ LANGUAGE: {response_language}
 
 JSON schema: {model_schema}
 
-<LOGS BEGIN>
 {logs}
-<LOGS END>
 """
 
 PROMPT_TEMPLATE_LINUX_SYSTEM_LOG = """
@@ -156,9 +152,7 @@ LANGUAGE: {response_language}
 
 JSON schema: {model_schema}
 
-<LOGS BEGIN>
 {logs}
-<LOGS END>
 """
 
 def get_httpd_access_prompt():
@@ -248,9 +242,7 @@ LANGUAGE: {response_language}
 
 JSON schema: {model_schema}
 
-<LOGS BEGIN>
 {logs}
-<LOGS END>
 """
 
 def get_general_log_prompt():

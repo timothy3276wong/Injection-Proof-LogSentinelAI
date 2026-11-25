@@ -65,6 +65,7 @@ from .geoip import enrich_source_ips_with_geoip
 from ..utils.general import chunked_iterable, print_chunk_contents
 from .monitoring import RealtimeLogMonitor, create_realtime_monitor
 from .token_utils import count_tokens
+from .sanitize import wrap_untrusted_logs
 
 def print_raw_response_debug(raw_response, error=None, max_preview_chars: int = 4000) -> None:
     """Print enough raw LLM response context to diagnose invalid JSON."""
@@ -624,7 +625,7 @@ def run_generic_realtime_analysis(log_type: str, analysis_schema_class, prompt_t
     # Function to create analysis prompt from raw chunk data
     def prepare_chunk_for_analysis(chunk, response_language):
         # Create prompt with original log lines
-        logs = "\n".join(line.strip() for line in chunk if line.strip())  # Skip empty lines
+        logs = wrap_untrusted_logs(chunk)  # injection defense: see core/sanitize.py
         model_schema = analysis_schema_class.model_json_schema()
         prompt = prompt_template.format(
             logs=logs, 
@@ -1235,7 +1236,7 @@ def _process_single_chunk_streaming(chunk_buffer: List[str], chunk_number: int, 
             chunk_start_time = datetime.datetime.utcnow().isoformat(timespec='seconds') + 'Z'
             
             # Prepare chunk data as string (same format as original)
-            logs = "\n".join(chunk_buffer).rstrip("\n")
+            logs = wrap_untrusted_logs(chunk_buffer)  # injection defense: see core/sanitize.py
             model_schema = analysis_schema_class.model_json_schema()
             prompt = prompt_template.format(logs=logs, model_schema=model_schema, response_language=response_language)
             prompt = prompt.strip()

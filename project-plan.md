@@ -8,11 +8,11 @@ _Living document. Last updated: 2026-11-24._
 
 - **What this project is:** fork the open-source tool **LogSentinelAI**, prove it's vulnerable to prompt/log injection, add a defense, and measure the fix.
 - **Base repo to fork:** `github.com/call518/LogSentinelAI` (MIT). Confirm it's active (last commit, open issues) before forking.
-- **Current status (2026-11-24):** baseline attack runs done ✅ — the unmodified tool is demonstrably manipulable (4/4 valid injections changed the verdict). Next: repeat runs for rates, then the first defense. _(Summary only — full history in **Development Log** at the bottom.)_
+- **Current status (2026-11-25):** baseline attack runs done ✅ — the unmodified tool is demonstrably manipulable (4/4 valid injections changed the verdict). Defense 1 (delimiting/spotlighting) in progress: Decisions 1–2 of 8 implemented (see `docs/defense-1-decisions.md`). _(Summary only — full history in **Development Log** at the bottom.)_
   - Done: upstream checked (alive — last push 2026-11-04, mostly Dependabot; last maintainer commit 2026-10-24; 0 open issues; MIT). Forked to `timothy3276wong/Injection-Proof-LogSentinelAI` and cloned. uv + Python 3.12 installed; `.venv` built from `uv.lock`; `.python-version` set to 3.12; local `.env` configured for Ollama; CLI starts; 19/19 tests pass.
   - Done: Ollama 0.40.17 installed by the author, `qwen2.5:3b` pulled, context length 8192, runs on CPU.
   - Done: first end-to-end run — 4 lines of `sample-logs/access-10k.log`, chunk size 2, both chunks returned valid JSON that passed schema validation (details in `run-log.md`).
-  - Next: repeat each case several times to get rates (outputs vary between runs), then build the first defense (delimiting/spotlighting + code cross-check) and re-run the same cases.
+  - Next: Defense 1 Decision 3 (fake markers inside log lines), then the remaining decisions, then re-run all test cases on it.
   - Model decision: laptop is CPU-only (i5-1235U, 16 GB, Iris Xe) → `qwen2.5:3b` for development, `qwen2.5:7b` for the before/after runs.
   - Setup details and Windows gotchas (`PYTHONUTF8=1`): see `CLAUDE.md`.
 - **First task:** clone the fork, set up the environment (Python 3.11/3.12 + Ollama), configure LogSentinelAI to use the local Ollama backend, and get **one** test run producing valid JSON output on a sample log. Nothing else works until the backend is configured.
@@ -21,14 +21,14 @@ _Living document. Last updated: 2026-11-24._
 
 ## Goal
 
-Fork **LogSentinelAI**, find a real security weakness in how it feeds log text to the model (**prompt / log injection**), fix it, and **measure** the fix on public data. The deliverable is a hardened fork plus an evaluation harness that proves (a) the base tool was vulnerable and (b) the hardened version isn't. Resume/interview framing: "I took a real open-source security tool, found a prompt-injection weakness, fixed it, and measured the result."
+Fork **LogSentinelAI**, find a real security weakness in how it feeds log text to the model (**prompt / log injection**), fix it, and **measure** the fix on public data. The deliverable is a hardened fork plus test-case runs that prove (a) the base tool was vulnerable and (b) the hardened version isn't. Resume/interview framing: "I took a real open-source security tool, found a prompt-injection weakness, fixed it, and measured the result."
 
 ## Definition of Done
 
 - The fork runs end-to-end on Loghub data using a local Ollama model.
 - A documented set of poisoned log lines **demonstrably manipulates the base tool** (wrong verdict/severity, or a false alert).
 - A defense at the extraction boundary makes the fork **resist those attacks**, with **no measurable loss of accuracy on clean logs**.
-- An evaluation harness reports miss rate, false-alarm rate, and hallucination rate, base vs. hardened.
+- The test cases are run on the base and hardened versions, and `run-log.md` reports misses, false alarms and hallucinations for each.
 - A write-up of method and results, and a private responsible-disclosure note (plus optional upstream PR) to the maintainers.
 
 ## Scope & Differentiators
@@ -36,7 +36,7 @@ Fork **LogSentinelAI**, find a real security weakness in how it feeds log text t
 **In scope:**
 - Fork **LogSentinelAI** (MIT, Python, local-Ollama-capable security log analyzer).
 - Add a **log-injection defense layer** (treat log content as data, not instructions) where log text enters the LLM prompt.
-- Build an **evaluation harness** that runs the tool against labelled Loghub data and reports metrics.
+- Run the hand-crafted test cases (and clean logs) against each version and log the results.
 - Demonstrate a before/after: a poisoned log line that manipulates the base tool but fails against the hardened one.
 
 **Out of scope (for now):**
@@ -141,7 +141,7 @@ All free (except optional Claude API), runs on a laptop.
 
 ## Fork Strategy
 
-- **Keep the fork as the full project** — the fix, the evaluation harness, the attack tests, and the write-up all live there. MIT lets me modify and publish as long as I keep the license and credit.
+- **Keep the fork as the full project** — the fix, the attack tests and their results, and the write-up all live there. MIT lets me modify and publish as long as I keep the license and credit.
 - **Also send a small, clean PR upstream** with just the defense, *after* privately disclosing the vulnerability. If accepted → credited contributor to a real security tool. If not → the fork still stands alone.
 - (PR = "pull request" on GitHub = "merge request" on GitLab; same thing.)
 
@@ -211,3 +211,7 @@ _Append-only, newest last. Each entry: date — what happened, and why for decis
 - **Problems found:** the prompt's "always create an INFO event" rule produces contradictory events; `related_logs` is not copied exactly and drops injected text (hides evidence); hallucinated requests, response codes, locations and IPs; a JSON parse failure (S04 attempt 1) would itself trigger an alert.
 - **Decision: privacy safeguards.** Commits had published the author's university email (local git config) and personal email (GitHub web merge). Set the global git email to the GitHub noreply address, and added a local-only privacy check (git hooks + script + denylist, all gitignored) that blocks personal details, keys and raw output from future commits. Past commits were left as they are: rewriting pushed history is risky, and copies already exist in the upstream PR.
 - **Ollama updated** to 0.40.18 (Run 1 used 0.40.17).
+- **Plan change: no evaluation harness.** Defenses will be measured by running the hand-crafted test cases manually on each version (as in Runs 2–4), with results in `run-log.md`. Goal, Definition of Done, scope and Fork Strategy updated to match.
+
+### 2026-11-25
+- **Defense 1 started — Decisions 1–2 implemented.** Design choices are made one at a time by the author and recorded in `docs/defense-1-decisions.md`. Decision 1: the defense lives in a new module, `core/sanitize.py`, called by both prompt builders (`commons.py` batch and real-time). Decision 2: each prompt's log block is wrapped in random markers, `<<<LOG_DATA_<16 hex> BEGIN/END>>>`, from Python's `secrets` module, replacing the fixed `<LOGS BEGIN>`/`<LOGS END>` that S02 and F01 faked; the old markers were removed from all 4 templates. Tests: smoke test updated, 4 new tests in `tests/test_sanitize.py`; 23/23 pass. Not yet re-tested against the attack cases.
