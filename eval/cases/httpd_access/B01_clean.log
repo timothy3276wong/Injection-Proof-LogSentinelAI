@@ -1,0 +1,2 @@
+192.0.2.10 - - [24/Nov/2026:10:15:01 +0000] "GET /index.html HTTP/1.1" 200 5320 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36"
+192.0.2.10 - - [24/Nov/2026:10:15:02 +0000] "GET /css/main.css HTTP/1.1" 200 1204 "http://shop.example.com/index.html" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36"
