@@ -32,6 +32,15 @@ Fork of LogSentinelAI (`call518/LogSentinelAI`, MIT) being hardened against prom
 - Redact private details (hostnames, home/LAN IPs, usernames) — the repo is public.
 - Before ending a session or a piece of work, check that both files are up to date.
 
+## Privacy rules (required) — the repo is public
+- Never commit: `.env`, `runs/`, `*.mmdb`, `logsentinelai.log`, raw tool output, or anything copied from it unredacted.
+- Never write into tracked files or commit messages: the author's hostname, LAN/home IP, Windows username or user-folder paths, email addresses, real name beyond the GitHub username, API keys/tokens. The tool's `@host` field holds hostname + LAN IP — always drop it when quoting results.
+- Commit author email must be a GitHub noreply address (`<ID>+<username>@users.noreply.github.com`).
+- Enforced by `scripts/privacy_check.py`, run by local git hooks (`.git/hooks/pre-commit`, `.git/hooks/commit-msg`). Personal strings live in `.privacy-denylist`. The script, the denylist and the hooks are all **local only** (gitignored / untracked) — never commit them. Never bypass with `--no-verify`; if the check blocks a commit, redact and retry. Use the `privacy-allow` marker only for deliberate safe examples, and tell the author.
+- New clone? The script and denylist must be copied over from the old clone, and the hooks reinstalled:
+  `.git/hooks/pre-commit` → `exec .venv/Scripts/python.exe scripts/privacy_check.py`
+  `.git/hooks/commit-msg` → `exec .venv/Scripts/python.exe scripts/privacy_check.py --msg "$1"`
+
 ## Environment (Windows 10, PowerShell)
 - Python **3.12** via uv (`.python-version` = 3.12; project requires >=3.11,<3.13). Venv: `.venv`.
 - Install/refresh deps: `uv sync --extra dev --locked`

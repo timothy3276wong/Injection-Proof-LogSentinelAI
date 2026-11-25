@@ -23,3 +23,10 @@ config
 *.mmdb
 /*.log
 *.swp
+
+# Full test-run output (contains hostname/LAN IP in @host) - never commit
+runs/
+
+# Privacy check (script + personal strings) - stays local
+.privacy-denylist
+scripts/privacy_check.py
