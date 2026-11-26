@@ -12,7 +12,7 @@ gives a recommendation; the author decides; the choice and reason are recorded h
 | 2 | Log-block markers | **decided** 2026-11-25 | (b) random per prompt, `secrets`, 8 bytes, `<<<LOG_DATA_<code> BEGIN/END>>>` |
 | 3 | Fake markers inside log lines | **decided** 2026-11-25 | (b) defuse `<`/`>` → `(`/`)`, narrow pattern requiring marker words |
 | 4 | Labelling each line | **decided** 2026-11-25 | (a) no labels |
-| 5 | Transforming the text itself | open | — |
+| 5 | Transforming the text itself | **decided** 2026-11-26 | (d) datamarking with `^`, spaces only, behind an off-by-default setting |
 | 6 | Other hiding tricks (invisible chars, line breaks, colour codes, long lines) | open | — |
 | 7 | What the function returns | open | — |
 | 8 | Empty chunk | open | — |
@@ -73,7 +73,13 @@ Also considered: (d) labels containing the random code (unfakeable, but long and
 - **(c) Encoding** (e.g. base64). Small models decode badly.
 
 Recommendation: (a) for Defense 1; (b) as a possible later experiment.
-**Decision:** _open_
+
+Revisited 2026-11-26 after Run 5 (S01 still got through Decisions 1–4 + 9): datamarking is the one prompt-side technique aimed at "polite note" attacks, so a fourth option was added:
+- **(d) Datamarking behind an on/off setting, off by default** — build (b) but enable it with a config line, so it can be measured on S01/A01/B01 without committing to it.
+Sub-choices: marker character (`^` as in the published technique, or a rarer symbol such as `‸`/`·`); spaces only, or spaces and tabs.
+Updated recommendation: (d) with `^`, spaces only.
+
+**Decision (2026-11-26): (d) — datamarking with `^`, spaces only, behind an off-by-default setting.** Reason: targets the persuasion attack that beat Defense 1 (injected sentences stop reading as ordinary language), but it is unproven on a 3B model and could hurt detection of real attacks or garble `related_logs`, so it must be switchable and measured before being turned on. `^` matches the published technique so results are comparable. Open risk: logs that already contain `^` become ambiguous.
 
 ## Decision 6 — Other hiding tricks
 **Purpose:** characters a human can't see can hide or disguise instructions. Not covered by the current test cases.
