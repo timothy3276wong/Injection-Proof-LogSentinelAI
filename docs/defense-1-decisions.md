@@ -13,12 +13,14 @@ gives a recommendation; the author decides; the choice and reason are recorded h
 | 3 | Fake markers inside log lines | **decided** 2026-11-25 | (b) defuse `<`/`>` → `(`/`)`, narrow pattern requiring marker words |
 | 4 | Labelling each line | **decided** 2026-11-25 | (a) no labels |
 | 5 | Transforming the text itself | **decided** 2026-11-26 | (d) datamarking with `^`, spaces only, behind an off-by-default setting |
-| 6 | Other hiding tricks (invisible chars, line breaks, colour codes, long lines) | open | — |
-| 7 | What the function returns | open | — |
-| 8 | Empty chunk | open | — |
+| 6 | Other hiding tricks (invisible chars, line breaks, colour codes, long lines) | **decided** 2026-11-26 | skipped — out of scope; known limitations recorded |
+| 7 | What the function returns | **decided** 2026-11-26 | (a) text only |
+| 8 | Empty chunk | **decided** 2026-11-26 | skipped — current behavior kept (markers with nothing between) |
 | 9 | Telling the model about the markers (taken right after Decision 4) | **decided** 2026-11-25 | A2 exact code, B2 note from `sanitize.py`, C2 broad rule, D2 reminder after data |
 
 Order: 1, 2, 3, 4, **9**, 5, 6, 7, 8. Decision 9 was added on 2026-11-25 after noticing the prompt never explains the markers; it was numbered 9 so earlier references to Decisions 1–8 stay valid.
+
+**Defense 1 design complete (2026-11-26).** All 9 decisions settled.
 
 ---
 
@@ -89,7 +91,12 @@ Updated recommendation: (d) with `^`, spaces only.
 - **Very long lines**: cap per line (noting the cut) / no cap. A cap limits runaway output (S04) but could cut a real payload.
 
 Recommendation: handle invisible characters and line breaks (cheap, don't touch normal text); unsure about a length cap.
-**Decision:** _open_
+Expanded when taken (2026-11-26) into six items: 6a invisible characters (zero-width, text-direction controls), 6b hidden line breaks (U+2028/2029, U+0085, `\v`, `\f`), 6c terminal control codes, 6d look-alike characters (full-width `＜LOGS END＞` dodging Decision 3), 6e space look-alikes (non-breaking/Unicode spaces, tabs dodging datamarking), 6f very long lines (context overflow → failure alert). Updated recommendation: make 6a–6c visible, leave 6d until tested, include 6e in datamarking, cap 6f at 2,000 chars.
+
+**Decision (2026-11-26): skipped — no code change.** Reason: none of the test cases use these tricks; 6a–6d need noticeably more code for niche cases that didn't cause any observed failure. **Known limitations, recorded for the write-up:**
+- **6e:** if datamarking is switched on, an injected note written with non-breaking spaces, other Unicode spaces or tabs is not datamarked and reads normally again (a cheap bypass of Decision 5).
+- **6f (open availability issue):** a very long line can overflow the 8,192-token context, break the JSON answer and trigger an alert through the processing-failure path (`elasticsearch.py:114`). Candidate for Defense 2 or a later robustness fix.
+- 6a–6d: invisible/direction characters, hidden line breaks, terminal codes and look-alike markers are not handled.
 
 ## Decision 7 — What the function returns
 **Purpose:** whether Defense 2 (code cross-check) can see what Defense 1 found.
@@ -97,7 +104,7 @@ Recommendation: handle invisible characters and line breaks (cheap, don't touch 
 - **(b) Also a small report** (fake markers defused, suspicious lines) that Defense 2 can use, e.g. "fake delimiter present → don't allow INFO". A little more plumbing.
 
 Recommendation: (a) now, add the report when building Defense 2.
-**Decision:** _open_
+**Decision (2026-11-26): (a) text only — no code change.** Reason: Defense 2 can get the same information without a report, because `process_log_chunk()` already receives the raw chunk lines (`chunk_data`); it can re-run Decision 3's pattern itself via helpers in `sanitize.py`. Avoids guessing a report's fields before Defense 2 is designed, avoids changing `commons.py` again, and keeps the function a drop-in replacement for the original code.
 
 ## Decision 8 — Empty chunk
 **Purpose:** a chunk with no lines must not break the prompt. Rare (batch chunks are never empty).
@@ -105,7 +112,7 @@ Recommendation: (a) now, add the report when building Defense 2.
 - **(b) Markers plus a note** like `[no log lines]`.
 
 Recommendation: (a).
-**Decision:** _open_
+**Decision (2026-11-26): skipped — current behavior kept, no code change.** An empty chunk already produces the rules note, the two markers with nothing between, and the reminder, so the prompt doesn't break. Rare in practice (batch mode never sends an empty chunk).
 
 ## Decision 9 — Telling the model about the markers (taken right after Decision 4)
 **Purpose:** after Decisions 2–3 the prompt contains random markers, but nothing tells the model what they mean, that only the marker with this prompt's exact code ends the data, or that instructions inside the data must not be followed. The random code only protects if the model knows to check it. (Found 2026-11-25: originally planned as a separate "template wording" change and missed when the 8 decisions were listed.)
