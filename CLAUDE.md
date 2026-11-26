@@ -45,7 +45,7 @@ Fork of LogSentinelAI (`call518/LogSentinelAI`, MIT) being hardened against prom
 - Python **3.12** via uv (`.python-version` = 3.12; project requires >=3.11,<3.13). Venv: `.venv`.
 - Install/refresh deps: `uv sync --extra dev --locked`
 - Run CLI: `uv run logsentinelai --help` (or `.\.venv\Scripts\logsentinelai.exe`)
-- Tests: `uv run pytest -q --no-cov`
+- Tests: `uv run --extra dev pytest -q --no-cov` (plain `uv run` re-syncs without the dev extra and removes pytest)
 - **Set `PYTHONUTF8=1`** — the tool logs emoji, which crash the logger under the default Windows cp1252 console encoding.
 - Hardware: i5-1235U, 16 GB RAM, Intel Iris Xe, no NVIDIA GPU → Ollama runs on CPU.
 

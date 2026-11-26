@@ -51,6 +51,7 @@ TELEGRAM_ENABLED: bool = True
 TELEGRAM_TOKEN: str = ""
 TELEGRAM_CHAT_ID: str = ""
 TELEGRAM_ALERT_LEVEL: str = "CRITICAL"
+DATAMARKING_ENABLED: bool = False   # Defense 1, Decision 5: datamark log text (off by default)
 
 
 def _load_values() -> None:
@@ -58,7 +59,7 @@ def _load_values() -> None:
     global LLM_PROVIDER, LLM_MODELS, LLM_API_HOSTS, LLM_TEMPERATURE, LLM_TOP_P, LLM_MAX_TOKENS, LLM_REASONING_EFFORT
     global RESPONSE_LANGUAGE, ANALYSIS_MODE, LOG_PATHS, REALTIME_CONFIG, DEFAULT_REMOTE_SSH_CONFIG
     global LOG_CHUNK_SIZES, GEOIP_CONFIG, ELASTICSEARCH_HOST, ELASTICSEARCH_USER
-    global ELASTICSEARCH_PASSWORD, ELASTICSEARCH_INDEX, TELEGRAM_ENABLED, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_ALERT_LEVEL
+    global ELASTICSEARCH_PASSWORD, ELASTICSEARCH_INDEX, TELEGRAM_ENABLED, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_ALERT_LEVEL, DATAMARKING_ENABLED
     LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
     LLM_MODELS = {
         "ollama": os.getenv("LLM_MODEL_OLLAMA", "qwen2.5-coder:3b"),
@@ -139,6 +140,9 @@ def _load_values() -> None:
     TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
     TELEGRAM_ALERT_LEVEL = os.getenv("TELEGRAM_ALERT_LEVEL", "CRITICAL").upper()
+
+    # Prompt-injection defense (Defense 1, Decision 5)
+    DATAMARKING_ENABLED = os.getenv("DATAMARKING_ENABLED", "false").lower() == "true"
 
     logger.info(f"Configuration loaded (config_file={CONFIG_FILE_PATH})")
 

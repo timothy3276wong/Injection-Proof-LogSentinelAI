@@ -44,8 +44,9 @@ def test_prompt_templates_cover_supported_log_types(configured_project) -> None:
     for prompt in prompts:
         assert "{model_schema}" in prompt
         assert "{response_language}" in prompt
-        assert "<LOGS BEGIN>" in prompt
-        assert "<LOGS END>" in prompt
+        assert "{logs}" in prompt             # the slot where wrap_untrusted_logs() output goes
+        assert "<LOGS BEGIN>" not in prompt   # the old fixed, fakeable markers must not come back
+        assert "<LOGS END>" not in prompt
 
 
 def test_cli_ssh_arguments_are_validated_and_parsed(configured_project) -> None:
